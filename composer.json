@@ -1,0 +1,29 @@
+{
+    "name": "merakilab/merakilab-core",
+    "description": "Meraki Core Framework",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Merakilab\\Core\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "DatPA",
+            "email": "datpa@merakilabs.tech"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {
+      "php": "^8.2",
+      "laravel/framework": "^12.0"
+    },
+    "extra": {
+      "laravel": {
+        "providers": [
+          "Meraki\\Core\\CoreServiceProvider"
+        ]
+      }
+    }
+}
