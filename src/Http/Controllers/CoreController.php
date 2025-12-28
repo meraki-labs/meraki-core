@@ -1,6 +1,6 @@
 <?php
 
-namespace Merakilab\Core\Http\Controllers;
+namespace Meraki\Core\Http\Controllers;
 
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;

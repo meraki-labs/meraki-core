@@ -1,6 +1,6 @@
 <?php
 
-namespace Merakilab\Core;
+namespace Meraki\Core;
 
 use Illuminate\Support\ServiceProvider;
 

@@ -1,11 +1,11 @@
 {
-    "name": "merakilab/merakilab-core",
+    "name": "merakilab/meraki-core",
     "description": "Meraki Core Framework",
     "type": "library",
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "Merakilab\\Core\\": "src/"
+            "Meraki\\Core\\": "src/"
         }
     },
     "authors": [
@@ -22,7 +22,7 @@
     "extra": {
       "laravel": {
         "providers": [
-          "Merakilab\\Core\\CoreServiceProvider"
+          "Meraki\\Core\\CoreServiceProvider"
         ]
       }
     }
