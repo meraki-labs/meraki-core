@@ -22,7 +22,7 @@
     "extra": {
       "laravel": {
         "providers": [
-          "CoreServiceProvider"
+          "src/CoreServiceProvider"
         ]
       }
     }
