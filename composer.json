@@ -22,7 +22,7 @@
     "extra": {
       "laravel": {
         "providers": [
-          "src/CoreServiceProvider"
+          "Meraki\\Core\\CoreServiceProvider"
         ]
       }
     }
