@@ -9,7 +9,7 @@ class CoreServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__ . '/config/core.php',
+            __DIR__ . '/../config/core.php',
             'meraki'
         );
     }
@@ -18,7 +18,7 @@ class CoreServiceProvider extends ServiceProvider
     {
         // Publish
         $this->publishes([
-            __DIR__ . '/config/core.php' => config_path('meraki/core.php'),
+            __DIR__ . '/../config/core.php' => config_path('meraki/core.php'),
         ], 'meraki-config');
     }
 }
