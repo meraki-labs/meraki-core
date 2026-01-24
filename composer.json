@@ -1,29 +1,30 @@
 {
-    "name": "merakilab/meraki-core",
-    "description": "Meraki Core Framework",
-    "type": "library",
-    "license": "MIT",
-    "autoload": {
-        "psr-4": {
-            "Meraki\\Core\\": "src/"
-        }
-    },
-    "authors": [
-        {
-            "name": "DatPA",
-            "email": "datpa@merakilabs.tech"
-        }
-    ],
-    "minimum-stability": "stable",
-    "require": {
-      "php": "^8.2",
-      "laravel/framework": "^12.0"
-    },
-    "extra": {
-      "laravel": {
-        "providers": [
-          "Meraki\\Core\\CoreServiceProvider"
-        ]
-      }
+  "name": "merakilab/meraki-core",
+  "description": "Meraki Core Framework",
+  "type": "library",
+  "version": "dev-main",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Meraki\\Core\\": "src/"
     }
+  },
+  "authors": [
+    {
+      "name": "DatPA",
+      "email": "datpa@merakilabs.tech"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": "^8.2",
+    "laravel/framework": "^12.0"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Meraki\\Core\\CoreServiceProvider"
+      ]
+    }
+  }
 }

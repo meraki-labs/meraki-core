@@ -1,12 +1,11 @@
 <?php
 
-namespace Meraki\Core\Setting;
+namespace Meraki\Core\Settings;
 
 class SettingManager
 {
-    public function __construct(
-        protected SettingRepositoryInterface $repository
-    ) {
+    public function __construct(protected SettingRepositoryInterface $repository)
+    {
     }
 
     public function get(string $key, mixed $default = null): mixed

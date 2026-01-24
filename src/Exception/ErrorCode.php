@@ -2,6 +2,9 @@
 
 namespace Meraki\Core\Exception;
 
+/**
+ * @Author DatPA
+ */
 enum ErrorCode: string
 {
     case NOT_FOUND = 'NOT_FOUND';
