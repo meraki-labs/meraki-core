@@ -1,6 +1,6 @@
 {
   "name": "merakilab/meraki-core",
-  "description": "Meraki Core Framework",
+  "description": "Meraki Core",
   "type": "library",
   "version": "dev-main",
   "license": "MIT",
@@ -15,10 +15,9 @@
       "email": "datpa@merakilabs.tech"
     }
   ],
-  "minimum-stability": "stable",
   "require": {
     "php": "^8.2",
-    "laravel/framework": "^12.0"
+    "illuminate/support": "^v12.0"
   },
   "extra": {
     "laravel": {
@@ -26,5 +25,7 @@
         "Meraki\\Core\\CoreServiceProvider"
       ]
     }
-  }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
 }

@@ -1,12 +1,16 @@
 <?php
+/**
+ * @internal
+ * Managed by Meraki Core Team
+ */
 
 namespace Meraki\Core;
 
+use Meraki\Core\Modules\PermissionRegistry;
+use Meraki\Core\Events\PermissionsRegistered;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Contracts\Container\BindingResolutionException;
 
-/**
- * @Author DatPA
- */
 class CoreServiceProvider extends ServiceProvider
 {
     /**
@@ -14,17 +18,27 @@ class CoreServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/meraki.php', 'meraki');
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/meraki.php',
+            'meraki'
+        );
+
+        $this->app->singleton(PermissionRegistry::class);
     }
 
     /**
      * @return void
+     * @throws BindingResolutionException
      */
     public function boot(): void
     {
-        // Publish
         $this->publishes([
             __DIR__ . '/../config/meraki.php' => config_path('meraki.php'),
-        ], ['meraki-config', ['meraki-core']]);
+        ], ['meraki-config']);
+
+        // Fire lifecycle event for IAM / others
+        event(new PermissionsRegistered(
+            $this->app->make(PermissionRegistry::class)
+        ));
     }
 }

@@ -1,4 +1,6 @@
 <?php
+
 return [
-    'name' => 'Meraki',
+    'enabled' => true,
+    'modules' => [],
 ];
