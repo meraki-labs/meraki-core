@@ -1,6 +1,9 @@
 <?php
 
 return [
-    'enabled' => true,
-    'modules' => [],
+    'enabled' => env('MERAKI_ENABLED', true),
+    'capabilities' => [
+        'auth'       => ['driver' => env('MERAKI_AUTH_DRIVER', 'auto')],
+        'permission' => ['driver' => env('MERAKI_PERMISSION_DRIVER', 'auto')],
+    ],
 ];
