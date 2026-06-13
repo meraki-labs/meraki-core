@@ -4,6 +4,7 @@ namespace Meraki\Core;
 
 use Meraki\Core\Adapters\LaravelAuthAdapter;
 use Meraki\Core\Adapters\LaravelGateAdapter;
+use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\CoreManager;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Modules\PermissionRegistry;
@@ -37,6 +38,10 @@ class CoreServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../config/meraki.php' => config_path('meraki.php'),
         ], ['meraki-config']);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([MerakiInfoCommand::class]);
+        }
 
         $this->app->booted(function () {
             $registry = $this->app->make(PermissionRegistry::class);
