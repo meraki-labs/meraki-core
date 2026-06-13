@@ -4,7 +4,6 @@
 It provides shared conventions, registries, events, and lifecycle hooks that allow independent modules and packages to integrate cleanly — without tight coupling.
 
 Meraki Core **does not implement business logic** such as roles, authorization engines, or permission storage. It only *listens, aggregates, and exposes metadata*.
-
 ---
 
 ## Design Principles
@@ -142,7 +141,6 @@ This allows packages to:
 Without Core knowing *how* they do it.
 
 ---
-
 ## Capability Gate
 
 Meraki Core acts as a **capability gate** — a single access point that routes calls to whichever driver is available, with automatic fallback to Laravel defaults when no Meraki package is installed.
