@@ -4,9 +4,6 @@
 It provides shared conventions, registries, events, and lifecycle hooks that allow independent modules and packages to integrate cleanly — without tight coupling.
 
 Meraki Core **does not implement business logic** such as roles, authorization engines, or permission storage. It only *listens, aggregates, and exposes metadata*.
-
-> **TEST:** Ghi chú này được thêm để kiểm thử quy trình AgentOps. (Ticket: Thêm ghi chú TEST vào README)
-
 ---
 
 ## Design Principles
@@ -142,6 +139,85 @@ This allows packages to:
 * Attach authorization engines
 
 Without Core knowing *how* they do it.
+
+---
+## Capability Gate
+
+Meraki Core acts as a **capability gate** — a single access point that routes calls to whichever driver is available, with automatic fallback to Laravel defaults when no Meraki package is installed.
+
+### Supported capabilities
+
+| Capability | Contract | Default (fallback) |
+|---|---|---|
+| `auth` | `Meraki\Core\Contracts\AuthDriver` | `LaravelAuthAdapter` (wraps `Auth` facade) |
+| `permission` | `Meraki\Core\Contracts\PermissionDriver` | `LaravelGateAdapter` (wraps `Gate` facade) |
+
+### Usage
+
+```php
+// Via Facade
+Meraki::auth()->check();          // bool
+Meraki::auth()->id();             // mixed
+Meraki::auth()->user();           // ?object
+Meraki::can('posts.create');      // bool
+Meraki::can('posts.edit', $user); // bool — check for a specific user
+
+// Via helpers
+meraki()->auth()->check();
+meraki_can('posts.create');
+```
+
+### Driver resolution order
+
+For each capability, CoreManager resolves the driver as follows:
+
+1. `config('meraki.capabilities.<capability>.driver')` — explicit name (not `auto`)
+2. Last driver registered via `extend()` (package driver)
+3. Laravel adapter (built-in fallback)
+
+### Registering a package driver (convention for Meraki packages)
+
+In your package's `ServiceProvider::register()`:
+
+```php
+use Meraki\Core\CoreManager;
+
+public function register(): void
+{
+    $core = $this->app->make(CoreManager::class);
+
+    // Register the package so Core knows it's installed
+    $core->packages()->register('meraki-auth', [
+        'provider' => static::class,
+        'config'   => 'meraki-auth',   // key used to load permissions from config
+    ]);
+
+    // Register the capability driver
+    $core->extend('auth', 'meraki-auth', fn ($app) => new MerakiAuthDriver(
+        $app->make(\Meraki\Auth\Services\AuthManager::class)
+    ));
+}
+```
+
+`MerakiAuthDriver` is a thin adapter **inside your package** that implements `Meraki\Core\Contracts\AuthDriver`.
+
+### Registering a third-party driver (e.g. spatie/laravel-permission)
+
+```php
+// In AppServiceProvider::register()
+$this->app->make(\Meraki\Core\CoreManager::class)
+    ->extend('permission', 'spatie', fn ($app) => new SpatiePermissionDriver());
+```
+
+Then in `config/meraki.php`:
+
+```php
+'capabilities' => [
+    'permission' => ['driver' => 'spatie'],
+],
+```
+
+Or set `MERAKI_PERMISSION_DRIVER=spatie` in `.env`.
 
 ---
 
