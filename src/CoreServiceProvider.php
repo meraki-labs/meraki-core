@@ -7,6 +7,7 @@ use Meraki\Core\Adapters\LaravelGateAdapter;
 use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
+use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Installer\MerakiInstaller;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Modules\PermissionRegistry;
@@ -24,6 +25,7 @@ class CoreServiceProvider extends ServiceProvider
 
         $this->app->singleton(PackageRegistry::class);
         $this->app->singleton(PermissionRegistry::class);
+        $this->app->singleton(HookRegistry::class);
         $this->app->singleton(LaravelAuthAdapter::class);
         $this->app->singleton(LaravelGateAdapter::class);
 
@@ -31,6 +33,7 @@ class CoreServiceProvider extends ServiceProvider
             return new CoreManager(
                 $app,
                 $app->make(PackageRegistry::class),
+                $app->make(HookRegistry::class),
             );
         });
 

@@ -6,6 +6,7 @@ use Orchestra\Testbench\TestCase;
 use Meraki\Core\CoreManager;
 use Meraki\Core\CoreServiceProvider;
 use Meraki\Core\Adapters\LaravelAuthAdapter;
+use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Adapters\LaravelGateAdapter;
 use Meraki\Core\Contracts\AuthDriver;
 use Meraki\Core\Contracts\PermissionDriver;
@@ -122,6 +123,19 @@ class CoreManagerTest extends TestCase
         $this->expectExceptionMessageMatches('/non-existent/');
 
         $manager->auth();
+    }
+
+    // Test: hooks() returns HookRegistry
+    public function test_hooks_returns_hook_registry(): void
+    {
+        $manager = $this->app->make(CoreManager::class);
+        $this->assertInstanceOf(HookRegistry::class, $manager->hooks());
+    }
+
+    public function test_hooks_returns_same_singleton_instance(): void
+    {
+        $manager = $this->app->make(CoreManager::class);
+        $this->assertSame($manager->hooks(), $this->app->make(HookRegistry::class));
     }
 
     // Test: packages() returns PackageRegistry

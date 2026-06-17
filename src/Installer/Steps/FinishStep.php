@@ -8,6 +8,7 @@ class FinishStep implements Step
 {
     public function run(InstallerContext $context): void
     {
-        // Reserved for post-install / post-update hooks
+        // Hook meraki.installed / meraki.updated được fire bởi MerakiInstaller::run()
+        // sau khi bước này hoàn tất — xem HookRegistry.
     }
 }

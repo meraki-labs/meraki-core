@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use Illuminate\Contracts\Foundation\Application;
 use Meraki\Core\Contracts\AuthDriver;
 use Meraki\Core\Contracts\PermissionDriver;
+use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Modules\PackageRegistry;
 
 class CoreManager
@@ -17,6 +18,7 @@ class CoreManager
     public function __construct(
         protected Application $app,
         protected PackageRegistry $packageRegistry,
+        protected HookRegistry $hookRegistry,
     ) {}
 
     public function extend(string $capability, string $name, Closure $factory): void
@@ -72,6 +74,11 @@ class CoreManager
     public function packages(): PackageRegistry
     {
         return $this->packageRegistry;
+    }
+
+    public function hooks(): HookRegistry
+    {
+        return $this->hookRegistry;
     }
 
     protected function defaultDriver(string $capability): string
