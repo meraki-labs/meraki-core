@@ -11,6 +11,7 @@ use Meraki\Core\Adapters\LaravelGateAdapter;
 use Meraki\Core\Contracts\AuthDriver;
 use Meraki\Core\Contracts\PermissionDriver;
 use Meraki\Core\Facades\Meraki;
+use Meraki\Core\Exceptions\DriverNotFoundException;
 use InvalidArgumentException;
 
 class CoreManagerTest extends TestCase
@@ -113,13 +114,13 @@ class CoreManagerTest extends TestCase
         $this->assertSame('specific', $resolved->id());
     }
 
-    public function test_non_existent_driver_throws_invalid_argument_exception(): void
+    public function test_non_existent_driver_throws_driver_not_found_exception(): void
     {
         config(['meraki.capabilities.auth.driver' => 'non-existent']);
 
         $manager = $this->app->make(CoreManager::class);
 
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(DriverNotFoundException::class);
         $this->expectExceptionMessageMatches('/non-existent/');
 
         $manager->auth();

@@ -7,6 +7,7 @@ use Meraki\Core\Adapters\LaravelGateAdapter;
 use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
+use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Installer\MerakiInstaller;
 use Meraki\Core\Modules\PackageRegistry;
@@ -51,6 +52,10 @@ class CoreServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], ['meraki-migrations']);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([MerakiInfoCommand::class]);
+        }
 
         $this->app->booted(function () {
             $registry = $this->app->make(PermissionRegistry::class);
