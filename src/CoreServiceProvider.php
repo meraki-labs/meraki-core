@@ -8,6 +8,7 @@ use Meraki\Core\Console\Commands\DiscoverCommand;
 use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
+use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\Installer\MerakiInstaller;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Modules\PermissionRegistry;
@@ -100,6 +101,7 @@ class CoreServiceProvider extends ServiceProvider
             UpdateCommand::class,
             DoctorCommand::class,
             DiscoverCommand::class,
+            MerakiInfoCommand::class,
         ]);
     }
 }

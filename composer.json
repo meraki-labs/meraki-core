@@ -14,7 +14,8 @@
   },
   "autoload-dev": {
     "psr-4": {
-      "Meraki\\Core\\Tests\\": "tests/"
+      "Meraki\\Core\\Tests\\": "tests/",
+      "Meraki\\Core\\Testing\\": "src/Testing/"
     }
   },
   "authors": [
