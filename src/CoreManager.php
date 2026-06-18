@@ -6,7 +6,8 @@ use Closure;
 use Illuminate\Contracts\Foundation\Application;
 use Meraki\Core\Contracts\AuthDriver;
 use Meraki\Core\Contracts\PermissionDriver;
-use Meraki\Core\Exceptions\DriverNotFoundException;
+use Meraki\Core\Exceptions\CapabilityDriverNotFoundException;
+use Meraki\Core\Exceptions\CapabilityNotSupportedException;
 use Meraki\Core\Modules\PackageRegistry;
 
 class CoreManager
@@ -35,9 +36,9 @@ class CoreManager
 
         if ($driverName !== 'auto') {
             if (!isset($this->factories[$capability][$driverName])) {
-                throw DriverNotFoundException::for(
-                    $capability,
+                throw CapabilityDriverNotFoundException::for(
                     $driverName,
+                    $capability,
                     array_keys($this->factories[$capability] ?? [])
                 );
             }
@@ -90,7 +91,7 @@ class CoreManager
         return match ($capability) {
             'auth'       => \Meraki\Core\Adapters\LaravelAuthAdapter::class,
             'permission' => \Meraki\Core\Adapters\LaravelGateAdapter::class,
-            default      => throw DriverNotFoundException::for($capability, 'default', []),
+            default      => throw CapabilityNotSupportedException::for($capability),
         };
     }
 }

@@ -4,8 +4,11 @@ namespace Meraki\Core;
 
 use Meraki\Core\Adapters\LaravelAuthAdapter;
 use Meraki\Core\Adapters\LaravelGateAdapter;
+use Meraki\Core\Console\Commands\DoctorCommand;
+use Meraki\Core\Console\Commands\InstallCommand;
+use Meraki\Core\Console\Commands\UpdateCommand;
 use Meraki\Core\Console\MerakiInfoCommand;
-use Meraki\Core\CoreManager;
+use Meraki\Core\Installer\MerakiInstaller;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Modules\PermissionRegistry;
 use Meraki\Core\Events\PermissionsRegistered;
@@ -15,7 +18,7 @@ class CoreServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(
+        $this->mergeConfigDeep(
             __DIR__ . '/../config/meraki.php',
             'meraki'
         );
@@ -31,6 +34,17 @@ class CoreServiceProvider extends ServiceProvider
                 $app->make(PackageRegistry::class),
             );
         });
+
+        $this->app->singleton(MerakiInstaller::class, function () {
+            return new MerakiInstaller();
+        });
+    }
+
+    protected function mergeConfigDeep(string $path, string $key): void
+    {
+        $existing = config($key, []);
+        $default = require $path;
+        config([$key => array_replace_recursive($default, $existing)]);
     }
 
     public function boot(): void
@@ -39,15 +53,14 @@ class CoreServiceProvider extends ServiceProvider
             __DIR__ . '/../config/meraki.php' => config_path('meraki.php'),
         ], ['meraki-config']);
 
-        if ($this->app->runningInConsole()) {
-            $this->commands([MerakiInfoCommand::class]);
-        }
+        $this->publishes([
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
+        ], ['meraki-migrations']);
 
         $this->app->booted(function () {
             $registry = $this->app->make(PermissionRegistry::class);
             $packages = $this->app->make(PackageRegistry::class);
 
-            // Collect permissions declared in each registered package's config
             foreach ($packages->all() as $name => $meta) {
                 $configKey = $meta['config'] ?? null;
                 if ($configKey) {
@@ -60,5 +73,16 @@ class CoreServiceProvider extends ServiceProvider
 
             event(new PermissionsRegistered($registry));
         });
+
+        if (! $this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->commands([
+            InstallCommand::class,
+            UpdateCommand::class,
+            DoctorCommand::class,
+            MerakiInfoCommand::class,
+        ]);
     }
 }

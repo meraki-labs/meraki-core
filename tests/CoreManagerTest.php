@@ -2,29 +2,18 @@
 
 namespace Meraki\Core\Tests;
 
-use Orchestra\Testbench\TestCase;
 use Meraki\Core\CoreManager;
-use Meraki\Core\CoreServiceProvider;
 use Meraki\Core\Adapters\LaravelAuthAdapter;
 use Meraki\Core\Adapters\LaravelGateAdapter;
 use Meraki\Core\Contracts\AuthDriver;
 use Meraki\Core\Contracts\PermissionDriver;
+use Meraki\Core\Exceptions\CapabilityDriverNotFoundException;
+use Meraki\Core\Exceptions\MerakiException;
 use Meraki\Core\Facades\Meraki;
-use Meraki\Core\Exceptions\DriverNotFoundException;
-use InvalidArgumentException;
+use Meraki\Core\Testing\MerakiTestCase;
 
-class CoreManagerTest extends TestCase
+class CoreManagerTest extends MerakiTestCase
 {
-    protected function getPackageProviders($app): array
-    {
-        return [CoreServiceProvider::class];
-    }
-
-    protected function getPackageAliases($app): array
-    {
-        return ['Meraki' => Meraki::class];
-    }
-
     // Test 1: fallback to Laravel adapters when no package driver registered
     public function test_auth_capability_returns_laravel_adapter_by_default(): void
     {
@@ -113,14 +102,25 @@ class CoreManagerTest extends TestCase
         $this->assertSame('specific', $resolved->id());
     }
 
-    public function test_non_existent_driver_throws_driver_not_found_exception(): void
+    public function test_non_existent_driver_throws_capability_driver_not_found(): void
     {
         config(['meraki.capabilities.auth.driver' => 'non-existent']);
 
         $manager = $this->app->make(CoreManager::class);
 
-        $this->expectException(DriverNotFoundException::class);
+        $this->expectException(CapabilityDriverNotFoundException::class);
         $this->expectExceptionMessageMatches('/non-existent/');
+
+        $manager->auth();
+    }
+
+    public function test_driver_not_found_is_meraki_exception(): void
+    {
+        config(['meraki.capabilities.auth.driver' => 'non-existent']);
+
+        $manager = $this->app->make(CoreManager::class);
+
+        $this->expectException(MerakiException::class);
 
         $manager->auth();
     }

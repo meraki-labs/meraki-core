@@ -2,24 +2,18 @@
 
 namespace Meraki\Core\Tests;
 
-use Orchestra\Testbench\TestCase;
 use Meraki\Core\CoreManager;
-use Meraki\Core\CoreServiceProvider;
-use Meraki\Core\Exceptions\DriverNotFoundException;
+use Meraki\Core\Exceptions\CapabilityDriverNotFoundException;
 use Meraki\Core\Exceptions\MerakiException;
+use Meraki\Core\Testing\MerakiTestCase;
 
-class DriverNotFoundExceptionTest extends TestCase
+class DriverNotFoundExceptionTest extends MerakiTestCase
 {
-    protected function getPackageProviders($app): array
-    {
-        return [CoreServiceProvider::class];
-    }
-
     public function test_driver_not_found_exception_is_thrown_when_driver_missing(): void
     {
         config(['meraki.capabilities.auth.driver' => 'nonexistent']);
 
-        $this->expectException(DriverNotFoundException::class);
+        $this->expectException(CapabilityDriverNotFoundException::class);
         $this->app->make(CoreManager::class)->capability('auth');
     }
 
@@ -29,8 +23,8 @@ class DriverNotFoundExceptionTest extends TestCase
 
         try {
             $this->app->make(CoreManager::class)->capability('auth');
-            $this->fail('Expected DriverNotFoundException');
-        } catch (DriverNotFoundException $e) {
+            $this->fail('Expected CapabilityDriverNotFoundException');
+        } catch (CapabilityDriverNotFoundException $e) {
             $this->assertStringContainsString('nonexistent', $e->getMessage());
         }
     }
@@ -41,8 +35,8 @@ class DriverNotFoundExceptionTest extends TestCase
 
         try {
             $this->app->make(CoreManager::class)->capability('auth');
-            $this->fail('Expected DriverNotFoundException');
-        } catch (DriverNotFoundException $e) {
+            $this->fail('Expected CapabilityDriverNotFoundException');
+        } catch (CapabilityDriverNotFoundException $e) {
             $this->assertStringContainsString('auth', $e->getMessage());
         }
     }
@@ -55,8 +49,8 @@ class DriverNotFoundExceptionTest extends TestCase
 
         try {
             $core->capability('auth');
-            $this->fail('Expected DriverNotFoundException');
-        } catch (DriverNotFoundException $e) {
+            $this->fail('Expected CapabilityDriverNotFoundException');
+        } catch (CapabilityDriverNotFoundException $e) {
             $this->assertStringContainsString('custom-one', $e->getMessage());
         }
     }
@@ -67,22 +61,22 @@ class DriverNotFoundExceptionTest extends TestCase
 
         try {
             $this->app->make(CoreManager::class)->capability('auth');
-            $this->fail('Expected DriverNotFoundException');
-        } catch (DriverNotFoundException $e) {
-            $this->assertStringContainsString('(none registered)', $e->getMessage());
+            $this->fail('Expected CapabilityDriverNotFoundException');
+        } catch (CapabilityDriverNotFoundException $e) {
+            $this->assertStringContainsString('none', $e->getMessage());
         }
     }
 
     public function test_driver_not_found_is_subclass_of_meraki_exception(): void
     {
-        $e = DriverNotFoundException::for('auth', 'missing', []);
+        $e = CapabilityDriverNotFoundException::for('missing', 'auth', []);
         $this->assertInstanceOf(MerakiException::class, $e);
         $this->assertInstanceOf(\RuntimeException::class, $e);
     }
 
     public function test_factory_method_builds_correct_message(): void
     {
-        $e = DriverNotFoundException::for('permission', 'my-driver', ['a', 'b']);
+        $e = CapabilityDriverNotFoundException::for('my-driver', 'permission', ['a', 'b']);
         $this->assertStringContainsString('my-driver', $e->getMessage());
         $this->assertStringContainsString('permission', $e->getMessage());
         $this->assertStringContainsString('a, b', $e->getMessage());
