@@ -4,16 +4,17 @@ namespace Meraki\Core;
 
 use Meraki\Core\Adapters\LaravelAuthAdapter;
 use Meraki\Core\Adapters\LaravelGateAdapter;
+use Meraki\Core\Console\Commands\DiscoverCommand;
 use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
-use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\CoreManager;
 use Meraki\Core\Installer\MerakiInstaller;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Modules\PermissionRegistry;
 use Meraki\Core\Modules\PluginRegistry;
+use Meraki\Core\Modules\PluginDiscovery;
 use Meraki\Core\Events\PermissionsRegistered;
 use Illuminate\Support\ServiceProvider;
 
@@ -42,6 +43,13 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(MerakiInstaller::class, function () {
             return new MerakiInstaller();
         });
+
+        $this->app->singleton(PluginDiscovery::class, function ($app) {
+            return new PluginDiscovery(
+                basePath: $app->basePath(),
+                cachePath: $app->bootstrapPath('cache/meraki-plugins.php'),
+            );
+        });
     }
 
     protected function mergeConfigDeep(string $path, string $key): void
@@ -62,9 +70,25 @@ class CoreServiceProvider extends ServiceProvider
         ], ['meraki-migrations']);
 
         $this->app->booted(function () {
-            $registry = $this->app->make(PermissionRegistry::class);
-            $packages = $this->app->make(PackageRegistry::class);
+            $discovery = $this->app->make(PluginDiscovery::class);
+            $packages  = $this->app->make(PackageRegistry::class);
             $plugins  = $this->app->make(PluginRegistry::class);
+
+            foreach ($discovery->discover() as $manifest) {
+                $configPath = $manifest->basePath . '/config/' . $manifest->config . '.php';
+                if (file_exists($configPath)) {
+                    $this->mergeConfigFrom($configPath, $manifest->config);
+                }
+
+                if (! $packages->has($manifest->id)) {
+                    $packages->register($manifest->id, [
+                        'provider' => $manifest->provider,
+                        'config'   => $manifest->config,
+                    ]);
+                }
+            }
+
+            $registry = $this->app->make(PermissionRegistry::class);
 
             // --- Typed plugins (PluginRegistry, độc lập) ---
             foreach ($plugins->all() as $plugin) {
@@ -98,6 +122,7 @@ class CoreServiceProvider extends ServiceProvider
             UpdateCommand::class,
             DoctorCommand::class,
             MerakiInfoCommand::class,
+            DiscoverCommand::class,
         ]);
     }
 }
