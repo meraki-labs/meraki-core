@@ -17,9 +17,16 @@ if (!function_exists('meraki_can')) {
     }
 }
 
-if (!function_exists('get_permissions')) {
-    function get_permissions(): array
+if (!function_exists('meraki_permissions')) {
+    function meraki_permissions(): array
     {
         return app(PermissionRegistry::class)->all();
+    }
+}
+
+if (!function_exists('meraki_version')) {
+    function meraki_version(): string
+    {
+        return \Meraki\Core\Installer\State\MerakiState::load()->laravelVersion ?: 'unknown';
     }
 }

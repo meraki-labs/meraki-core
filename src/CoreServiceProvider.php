@@ -5,6 +5,7 @@ namespace Meraki\Core;
 use Meraki\Core\Adapters\LaravelAuthAdapter;
 use Meraki\Core\Adapters\LaravelGateAdapter;
 use Meraki\Core\Console\Commands\DoctorCommand;
+use Meraki\Core\Console\Commands\InfoCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
 use Meraki\Core\Installer\MerakiInstaller;
@@ -37,6 +38,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(MerakiInstaller::class, function () {
             return new MerakiInstaller();
         });
+
+        $this->app->alias(CoreManager::class, 'meraki');
     }
 
     public function boot(): void
@@ -74,6 +77,7 @@ class CoreServiceProvider extends ServiceProvider
             InstallCommand::class,
             UpdateCommand::class,
             DoctorCommand::class,
+            InfoCommand::class,
         ]);
     }
 }

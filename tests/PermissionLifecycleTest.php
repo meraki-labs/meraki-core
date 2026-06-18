@@ -62,9 +62,9 @@ class PermissionLifecycleTest extends TestCase
     }
 
     // Test helpers are callable
-    public function test_get_permissions_helper_returns_array(): void
+    public function test_meraki_permissions_helper_returns_array(): void
     {
-        $result = get_permissions();
+        $result = meraki_permissions();
         $this->assertIsArray($result);
     }
 
