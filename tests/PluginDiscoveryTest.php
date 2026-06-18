@@ -5,7 +5,6 @@ namespace Meraki\Core\Tests;
 use Meraki\Core\Exceptions\DuplicatePluginIdException;
 use Meraki\Core\Modules\PluginDiscovery;
 use Meraki\Core\Modules\PluginManifest;
-use PHPUnit\Framework\TestCase;
 use Orchestra\Testbench\TestCase;
 use Meraki\Core\CoreServiceProvider;
 use Meraki\Core\Contracts\Plugin;

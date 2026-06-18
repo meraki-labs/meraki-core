@@ -21,16 +21,16 @@ class PluginInfoCommand extends Command
             return self::FAILURE;
         }
 
-        $records = collect($repo->all());
-        $record  = $records->firstWhere('id', $id);
+        $record    = collect($repo->all())->firstWhere('name', $id);
+        $enabledAt = $record !== null ? ($record->enabled_at ?? '—') : '—';
 
         $this->table(['Field', 'Value'], [
             ['ID',          $plugin->id()],
             ['Name',        $plugin->name()],
             ['Version',     $plugin->version()],
             ['Description', $plugin->description() ?: '(none)'],
-            ['Status',      $manager->isEnabled($id) ? 'enabled' : 'disabled'],
-            ['Enabled at',  $record?->enabled_at ?? '—'],
+            ['Status',      $manager->isActive($id) ? 'active' : 'inactive'],
+            ['Enabled at',  $enabledAt],
         ]);
 
         return self::SUCCESS;

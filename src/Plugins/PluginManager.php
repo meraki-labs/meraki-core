@@ -10,7 +10,7 @@ use RuntimeException;
 
 class PluginManager
 {
-    /** @var Plugin[] */
+    /** @var array<string, Plugin> */
     private array $discovered = [];
     private bool $hasDiscovered = false;
 
@@ -45,11 +45,11 @@ class PluginManager
     }
 
     /** @return Plugin[] */
-    public function enabled(): array
+    public function active(): array
     {
         return array_values(array_filter(
             $this->all(),
-            fn (Plugin $p) => $this->isEnabled($p->id()),
+            fn (Plugin $p) => $this->isActive($p->id()),
         ));
     }
 
@@ -60,30 +60,67 @@ class PluginManager
         return $this->discovered[$id] ?? null;
     }
 
-    public function isEnabled(string $id): bool
+    public function isActive(string $id): bool
     {
         try {
             return $this->repo->isEnabled($id);
         } catch (\Throwable $e) {
-            // DB not ready (migration not run) — fallback to disabled
             logger()->warning("PluginManager: DB not ready, defaulting all plugins to disabled. {$e->getMessage()}");
             return false;
         }
     }
 
-    public function enable(string $id): void
+    public function install(string $id): void
     {
         $plugin = $this->findOrFail($id);
 
+        $plugin->install();
+        $this->repo->markInstalled($id, $plugin->version());
+    }
+
+    public function uninstall(string $id): void
+    {
+        $plugin = $this->findOrFail($id);
+
+        $plugin->uninstall();
+        $this->repo->markUninstalled($id);
+    }
+
+    public function activate(string $id): void
+    {
+        $plugin = $this->findOrFail($id);
+
+        $activeIds = array_map(fn (Plugin $p) => $p->id(), $this->active());
+        $resolver  = $this->makeResolver();
+
+        if (!$resolver->canActivate($id, $activeIds)) {
+            $missing = $resolver->missingDeps($id, $activeIds);
+            throw new RuntimeException(
+                "Cannot activate plugin [{$id}]: missing dependencies [" . implode(', ', $missing) . "]"
+            );
+        }
+
+        $plugin->activate();
         $this->repo->setEnabled($id, true, $plugin->version());
 
         event(new PluginEnabled($id, $plugin));
     }
 
-    public function disable(string $id): void
+    public function deactivate(string $id): void
     {
         $plugin = $this->findOrFail($id);
 
+        $activeIds = array_map(fn (Plugin $p) => $p->id(), $this->active());
+        $resolver  = $this->makeResolver();
+
+        if (!$resolver->canDeactivate($id, $activeIds)) {
+            $dependents = $resolver->dependents($id, $activeIds);
+            throw new RuntimeException(
+                "Cannot deactivate plugin [{$id}]: still required by [" . implode(', ', $dependents) . "]"
+            );
+        }
+
+        $plugin->deactivate();
         $this->repo->setEnabled($id, false, $plugin->version());
 
         event(new PluginDisabled($id, $plugin));
@@ -105,5 +142,10 @@ class PluginManager
         }
 
         return $plugin;
+    }
+
+    private function makeResolver(): DependencyResolver
+    {
+        return new DependencyResolver($this->discovered);
     }
 }

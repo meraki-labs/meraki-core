@@ -16,13 +16,13 @@ class PluginEnableCommand extends Command
         $id = $this->argument('id');
 
         try {
-            $manager->enable($id);
+            $manager->activate($id);
         } catch (RuntimeException $e) {
             $this->error($e->getMessage());
             return self::FAILURE;
         }
 
-        $this->info("Plugin [{$id}] enabled. Note: changes take effect on the next request.");
+        $this->info("Plugin [{$id}] activated. Note: changes take effect on the next request.");
 
         return self::SUCCESS;
     }

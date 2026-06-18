@@ -25,7 +25,7 @@ class PluginListCommand extends Command
                 $plugin->id(),
                 $plugin->name(),
                 $plugin->version(),
-                $manager->isEnabled($plugin->id()) ? '<fg=green>enabled</>' : '<fg=red>disabled</>',
+                $manager->isActive($plugin->id()) ? '<fg=green>active</>' : '<fg=red>inactive</>',
             ];
         }
 

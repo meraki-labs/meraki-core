@@ -16,13 +16,13 @@ class PluginDisableCommand extends Command
         $id = $this->argument('id');
 
         try {
-            $manager->disable($id);
+            $manager->deactivate($id);
         } catch (RuntimeException $e) {
             $this->error($e->getMessage());
             return self::FAILURE;
         }
 
-        $this->info("Plugin [{$id}] disabled.");
+        $this->info("Plugin [{$id}] deactivated.");
 
         return self::SUCCESS;
     }

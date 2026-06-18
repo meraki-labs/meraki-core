@@ -37,13 +37,18 @@ class PluginManagerTest extends TestCase
         return new PluginManager([$discoverer], $this->app->make(PluginRepository::class));
     }
 
-    private function makePlugin(string $id, string $name = 'Test Plugin'): Plugin
+    private function makePlugin(string $id, string $name = 'Test Plugin', array $deps = []): Plugin
     {
-        return new class($id, $name) extends AbstractPlugin {
-            public function __construct(private string $pluginId, private string $pluginName) {}
-            public function id(): string      { return $this->pluginId; }
-            public function name(): string    { return $this->pluginName; }
-            public function version(): string { return '1.0.0'; }
+        return new class($id, $name, $deps) extends AbstractPlugin {
+            public function __construct(
+                private string $pluginId,
+                private string $pluginName,
+                private array  $pluginDeps,
+            ) {}
+            public function id(): string           { return $this->pluginId; }
+            public function name(): string         { return $this->pluginName; }
+            public function version(): string      { return '1.0.0'; }
+            public function dependencies(): array  { return $this->pluginDeps; }
         };
     }
 
@@ -61,46 +66,46 @@ class PluginManagerTest extends TestCase
         $this->assertContains('plugin-b', $ids);
     }
 
-    public function test_plugin_disabled_by_default(): void
+    public function test_plugin_inactive_by_default(): void
     {
         $plugin  = $this->makePlugin('my-plugin');
         $manager = $this->makeManager([$plugin]);
 
-        $this->assertFalse($manager->isEnabled('my-plugin'));
+        $this->assertFalse($manager->isActive('my-plugin'));
     }
 
-    public function test_enable_persists_state(): void
+    public function test_activate_persists_state(): void
     {
         $plugin  = $this->makePlugin('my-plugin');
         $manager = $this->makeManager([$plugin]);
 
-        $manager->enable('my-plugin');
+        $manager->activate('my-plugin');
 
-        $this->assertTrue($manager->isEnabled('my-plugin'));
+        $this->assertTrue($manager->isActive('my-plugin'));
     }
 
-    public function test_disable_persists_state(): void
+    public function test_deactivate_persists_state(): void
     {
         $plugin  = $this->makePlugin('my-plugin');
         $manager = $this->makeManager([$plugin]);
 
-        $manager->enable('my-plugin');
-        $manager->disable('my-plugin');
+        $manager->activate('my-plugin');
+        $manager->deactivate('my-plugin');
 
-        $this->assertFalse($manager->isEnabled('my-plugin'));
+        $this->assertFalse($manager->isActive('my-plugin'));
     }
 
-    public function test_enabled_returns_only_enabled_plugins(): void
+    public function test_active_returns_only_active_plugins(): void
     {
         $pluginA = $this->makePlugin('plugin-a');
         $pluginB = $this->makePlugin('plugin-b');
         $manager = $this->makeManager([$pluginA, $pluginB]);
 
-        $manager->enable('plugin-a');
+        $manager->activate('plugin-a');
 
-        $enabled = $manager->enabled();
-        $this->assertCount(1, $enabled);
-        $this->assertSame('plugin-a', $enabled[0]->id());
+        $active = $manager->active();
+        $this->assertCount(1, $active);
+        $this->assertSame('plugin-a', $active[0]->id());
     }
 
     public function test_find_returns_plugin_by_id(): void
@@ -121,49 +126,96 @@ class PluginManagerTest extends TestCase
         $this->assertNull($manager->find('unknown'));
     }
 
-    public function test_enable_fires_plugin_enabled_event(): void
+    public function test_activate_fires_plugin_enabled_event(): void
     {
         Event::fake([PluginEnabled::class]);
 
         $plugin  = $this->makePlugin('evt-plugin');
         $manager = $this->makeManager([$plugin]);
 
-        $manager->enable('evt-plugin');
+        $manager->activate('evt-plugin');
 
         Event::assertDispatched(PluginEnabled::class, function (PluginEnabled $e) {
             return $e->id === 'evt-plugin';
         });
     }
 
-    public function test_disable_fires_plugin_disabled_event(): void
+    public function test_deactivate_fires_plugin_disabled_event(): void
     {
         Event::fake([PluginDisabled::class]);
 
         $plugin  = $this->makePlugin('evt-plugin');
         $manager = $this->makeManager([$plugin]);
 
-        $manager->enable('evt-plugin');
-        $manager->disable('evt-plugin');
+        $manager->activate('evt-plugin');
+        $manager->deactivate('evt-plugin');
 
         Event::assertDispatched(PluginDisabled::class, function (PluginDisabled $e) {
             return $e->id === 'evt-plugin';
         });
     }
 
-    public function test_enable_unknown_plugin_throws(): void
+    public function test_activate_unknown_plugin_throws(): void
     {
         $manager = $this->makeManager([]);
 
         $this->expectException(\RuntimeException::class);
-        $manager->enable('non-existent');
+        $manager->activate('non-existent');
     }
 
-    public function test_disable_unknown_plugin_throws(): void
+    public function test_deactivate_unknown_plugin_throws(): void
     {
         $manager = $this->makeManager([]);
 
         $this->expectException(\RuntimeException::class);
-        $manager->disable('non-existent');
+        $manager->deactivate('non-existent');
+    }
+
+    public function test_activate_blocked_when_dependency_missing(): void
+    {
+        $pluginA = $this->makePlugin('plugin-a', 'Plugin A', ['plugin-b']);
+        $manager = $this->makeManager([$pluginA]);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/plugin-b/');
+
+        $manager->activate('plugin-a');
+    }
+
+    public function test_deactivate_blocked_when_dependent_is_active(): void
+    {
+        $pluginA = $this->makePlugin('plugin-a');
+        $pluginB = $this->makePlugin('plugin-b', 'Plugin B', ['plugin-a']);
+        $manager = $this->makeManager([$pluginA, $pluginB]);
+
+        $manager->activate('plugin-a');
+        $manager->activate('plugin-b');
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/plugin-b/');
+
+        $manager->deactivate('plugin-a');
+    }
+
+    public function test_install_creates_db_record(): void
+    {
+        $plugin  = $this->makePlugin('my-plugin');
+        $manager = $this->makeManager([$plugin]);
+
+        $manager->install('my-plugin');
+
+        $this->assertTrue($this->app->make(PluginRepository::class)->isInstalled('my-plugin'));
+    }
+
+    public function test_uninstall_removes_db_record(): void
+    {
+        $plugin  = $this->makePlugin('my-plugin');
+        $manager = $this->makeManager([$plugin]);
+
+        $manager->install('my-plugin');
+        $manager->uninstall('my-plugin');
+
+        $this->assertFalse($this->app->make(PluginRepository::class)->isInstalled('my-plugin'));
     }
 
     public function test_plugins_method_on_core_manager_returns_plugin_manager(): void

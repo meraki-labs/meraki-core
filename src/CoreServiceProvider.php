@@ -6,7 +6,6 @@ use Meraki\Core\CoreManager;
 use Meraki\Core\Adapters\LaravelAuthAdapter;
 use Meraki\Core\Adapters\LaravelGateAdapter;
 use Meraki\Core\Console\Commands\DiscoverCommand;
-use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InfoCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
@@ -17,7 +16,6 @@ use Meraki\Core\Console\Commands\PluginEnableCommand;
 use Meraki\Core\Console\Commands\PluginDisableCommand;
 use Meraki\Core\Console\Commands\PluginInfoCommand;
 use Meraki\Core\Events\PluginsBooted;
-use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Installer\MerakiInstaller;
 use Meraki\Core\Modules\DependencyGraph;
@@ -88,7 +86,7 @@ class CoreServiceProvider extends ServiceProvider
         // Register enabled plugins early so their service bindings are available
         try {
             $pluginManager = $this->app->make(PluginManager::class);
-            foreach ($pluginManager->enabled() as $plugin) {
+            foreach ($pluginManager->active() as $plugin) {
                 $plugin->register($this->app);
             }
         } catch (\Throwable) {
@@ -121,10 +119,6 @@ class CoreServiceProvider extends ServiceProvider
         ], ['meraki-migrations']);
 
         $this->validateDependencies();
-
-        if ($this->app->runningInConsole()) {
-            $this->commands([MerakiInfoCommand::class]);
-        }
 
         $this->app->booted(function () {
             $discovery = $this->app->make(PluginDiscovery::class);
@@ -172,7 +166,7 @@ class CoreServiceProvider extends ServiceProvider
             // Boot enabled plugins
             try {
                 $pluginManager = $this->app->make(PluginManager::class);
-                foreach ($pluginManager->enabled() as $plugin) {
+                foreach ($pluginManager->active() as $plugin) {
                     $plugin->boot($this->app);
                 }
                 event(new PluginsBooted($pluginManager));
@@ -190,7 +184,6 @@ class CoreServiceProvider extends ServiceProvider
             UpdateCommand::class,
             DoctorCommand::class,
             DiscoverCommand::class,
-            MerakiInfoCommand::class,
             PluginListCommand::class,
             PluginEnableCommand::class,
             PluginDisableCommand::class,
