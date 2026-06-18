@@ -2,15 +2,20 @@
 
 namespace Meraki\Core;
 
+use Meraki\Core\CoreManager;
 use Meraki\Core\Adapters\LaravelAuthAdapter;
 use Meraki\Core\Adapters\LaravelGateAdapter;
 use Meraki\Core\Console\Commands\DiscoverCommand;
+use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
-use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\Exceptions\MissingDependencyException;
-use Meraki\Core\CoreManager;
+use Meraki\Core\Console\Commands\PluginListCommand;
+use Meraki\Core\Console\Commands\PluginEnableCommand;
+use Meraki\Core\Console\Commands\PluginDisableCommand;
+use Meraki\Core\Console\Commands\PluginInfoCommand;
+use Meraki\Core\Events\PluginsBooted;
 use Meraki\Core\Installer\MerakiInstaller;
 use Meraki\Core\Modules\DependencyGraph;
 use Meraki\Core\Modules\DependencyResolver;
@@ -19,6 +24,10 @@ use Meraki\Core\Modules\PermissionRegistry;
 use Meraki\Core\Modules\PluginRegistry;
 use Meraki\Core\Modules\PluginDiscovery;
 use Meraki\Core\Events\PermissionsRegistered;
+use Meraki\Core\Plugins\PluginManager;
+use Meraki\Core\Plugins\PluginRepository;
+use Meraki\Core\Plugins\Discovery\DirectoryDiscoverer;
+use Meraki\Core\Plugins\Discovery\ComposerDiscoverer;
 use Illuminate\Support\ServiceProvider;
 
 class CoreServiceProvider extends ServiceProvider
@@ -36,16 +45,48 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(LaravelAuthAdapter::class);
         $this->app->singleton(LaravelGateAdapter::class);
 
+        $this->app->singleton(PluginRepository::class);
+
+        $this->app->singleton(PluginManager::class, function ($app) {
+            $sources = config('meraki.plugins.discover', ['directory', 'composer']);
+            $discoverers = [];
+
+            if (in_array('directory', $sources)) {
+                $discoverers[] = new DirectoryDiscoverer(
+                    config('meraki.plugins.path', base_path('plugins/'))
+                );
+            }
+
+            if (in_array('composer', $sources)) {
+                $discoverers[] = new ComposerDiscoverer(
+                    base_path('vendor/composer/installed.json')
+                );
+            }
+
+            return new PluginManager($discoverers, $app->make(PluginRepository::class));
+        });
+
         $this->app->singleton(CoreManager::class, function ($app) {
             return new CoreManager(
                 $app,
                 $app->make(PackageRegistry::class),
+                $app->make(PluginManager::class),
             );
         });
 
         $this->app->singleton(MerakiInstaller::class, function () {
             return new MerakiInstaller();
         });
+
+        // Register enabled plugins early so their service bindings are available
+        try {
+            $pluginManager = $this->app->make(PluginManager::class);
+            foreach ($pluginManager->enabled() as $plugin) {
+                $plugin->register($this->app);
+            }
+        } catch (\Throwable) {
+            // DB not ready — plugins default to disabled
+        }
 
         $this->app->singleton(PluginDiscovery::class, function ($app) {
             return new PluginDiscovery(
@@ -116,6 +157,17 @@ class CoreServiceProvider extends ServiceProvider
             }
 
             event(new PermissionsRegistered($registry));
+
+            // Boot enabled plugins
+            try {
+                $pluginManager = $this->app->make(PluginManager::class);
+                foreach ($pluginManager->enabled() as $plugin) {
+                    $plugin->boot($this->app);
+                }
+                event(new PluginsBooted($pluginManager));
+            } catch (\Throwable) {
+                // DB not ready — plugins default to disabled
+            }
         });
 
         if (! $this->app->runningInConsole()) {
@@ -126,8 +178,12 @@ class CoreServiceProvider extends ServiceProvider
             InstallCommand::class,
             UpdateCommand::class,
             DoctorCommand::class,
-            MerakiInfoCommand::class,
             DiscoverCommand::class,
+            MerakiInfoCommand::class,
+            PluginListCommand::class,
+            PluginEnableCommand::class,
+            PluginDisableCommand::class,
+            PluginInfoCommand::class,
         ]);
     }
 

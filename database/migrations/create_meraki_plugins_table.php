@@ -11,10 +11,12 @@ return new class extends Migration {
         Schema::create('meraki_plugins', function (Blueprint $table) {
             $table->id();
             $table->string('name', 100)->unique();
-            $table->string('version', 20)->default('');
             $table->string('status', 20)->default('active');
-            $table->timestamp('installed_at')->nullable();
             $table->json('meta')->nullable();
+            $table->boolean('enabled')->default(false);
+            $table->timestamp('enabled_at')->nullable();
+            $table->timestamp('installed_at')->nullable();
+            $table->string('version')->nullable();
             $table->timestamps();
         });
     }
