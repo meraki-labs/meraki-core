@@ -8,6 +8,7 @@ use Meraki\Core\Contracts\AuthDriver;
 use Meraki\Core\Contracts\PermissionDriver;
 use Meraki\Core\Exceptions\CapabilityDriverNotFoundException;
 use Meraki\Core\Exceptions\CapabilityNotSupportedException;
+use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Plugins\PluginManager;
 
@@ -20,6 +21,7 @@ class CoreManager
         protected Application $app,
         protected PackageRegistry $packageRegistry,
         protected PluginManager $pluginManager,
+        protected HookRegistry $hookRegistry,
     ) {}
 
     public function extend(string $capability, string $name, Closure $factory): void
@@ -81,6 +83,11 @@ class CoreManager
     public function plugins(): PluginManager
     {
         return $this->pluginManager;
+    }
+
+    public function hooks(): HookRegistry
+    {
+        return $this->hookRegistry;
     }
 
     public function resolvedCapabilities(): array

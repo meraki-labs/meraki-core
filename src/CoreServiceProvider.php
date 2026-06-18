@@ -16,6 +16,8 @@ use Meraki\Core\Console\Commands\PluginEnableCommand;
 use Meraki\Core\Console\Commands\PluginDisableCommand;
 use Meraki\Core\Console\Commands\PluginInfoCommand;
 use Meraki\Core\Events\PluginsBooted;
+use Meraki\Core\Console\MerakiInfoCommand;
+use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Installer\MerakiInstaller;
 use Meraki\Core\Modules\DependencyGraph;
 use Meraki\Core\Modules\DependencyResolver;
@@ -42,6 +44,7 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(PackageRegistry::class);
         $this->app->singleton(PermissionRegistry::class);
         $this->app->singleton(PluginRegistry::class);
+        $this->app->singleton(HookRegistry::class);
         $this->app->singleton(LaravelAuthAdapter::class);
         $this->app->singleton(LaravelGateAdapter::class);
 
@@ -71,6 +74,7 @@ class CoreServiceProvider extends ServiceProvider
                 $app,
                 $app->make(PackageRegistry::class),
                 $app->make(PluginManager::class),
+                $app->make(HookRegistry::class),
             );
         });
 
@@ -114,6 +118,10 @@ class CoreServiceProvider extends ServiceProvider
         ], ['meraki-migrations']);
 
         $this->validateDependencies();
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([MerakiInfoCommand::class]);
+        }
 
         $this->app->booted(function () {
             $discovery = $this->app->make(PluginDiscovery::class);
