@@ -2,18 +2,18 @@
 
 namespace Meraki\Core\Tests;
 
-use Orchestra\Testbench\TestCase;
-use Meraki\Core\CoreServiceProvider;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Modules\PermissionRegistry;
 use Meraki\Core\Events\PermissionsRegistered;
+use Meraki\Core\Testing\FakePackageServiceProvider;
+use Meraki\Core\Testing\MerakiTestCase;
 use Illuminate\Support\Facades\Event;
 
-class PermissionLifecycleTest extends TestCase
+class PermissionLifecycleTest extends MerakiTestCase
 {
     protected function getPackageProviders($app): array
     {
-        return [CoreServiceProvider::class, FakePackageServiceProvider::class];
+        return [...parent::getPackageProviders($app), FakePackageServiceProvider::class];
     }
 
     protected function defineEnvironment($app): void
@@ -78,17 +78,5 @@ class PermissionLifecycleTest extends TestCase
     {
         $result = meraki_can('any.permission');
         $this->assertIsBool($result);
-    }
-}
-
-/**
- * Simulates a Meraki package that registers itself and its permissions.
- */
-class FakePackageServiceProvider extends \Illuminate\Support\ServiceProvider
-{
-    public function register(): void
-    {
-        $core = $this->app->make(\Meraki\Core\CoreManager::class);
-        $core->packages()->register('fake-package', ['provider' => self::class, 'config' => 'fake-package']);
     }
 }

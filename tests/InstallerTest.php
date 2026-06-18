@@ -2,17 +2,12 @@
 
 namespace Meraki\Core\Tests;
 
-use Orchestra\Testbench\TestCase;
-use Meraki\Core\CoreServiceProvider;
 use Meraki\Core\Installer\MerakiInstaller;
+use Meraki\Core\Testing\MerakiTestCase;
 use Illuminate\Support\Facades\Artisan;
 
-class InstallerTest extends TestCase
+class InstallerTest extends MerakiTestCase
 {
-    protected function getPackageProviders($app): array
-    {
-        return [CoreServiceProvider::class];
-    }
 
     public function test_meraki_installer_is_bound_in_container(): void
     {

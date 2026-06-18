@@ -17,7 +17,7 @@ class CoreServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(
+        $this->mergeConfigDeep(
             __DIR__ . '/../config/meraki.php',
             'meraki'
         );
@@ -37,6 +37,13 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(MerakiInstaller::class, function () {
             return new MerakiInstaller();
         });
+    }
+
+    protected function mergeConfigDeep(string $path, string $key): void
+    {
+        $existing = config($key, []);
+        $default = require $path;
+        config([$key => array_replace_recursive($default, $existing)]);
     }
 
     public function boot(): void
