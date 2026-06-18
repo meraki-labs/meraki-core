@@ -8,6 +8,7 @@ use Meraki\Core\Adapters\LaravelGateAdapter;
 use Meraki\Core\Console\Commands\DiscoverCommand;
 use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\Console\Commands\DoctorCommand;
+use Meraki\Core\Console\Commands\InfoCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
 use Meraki\Core\Exceptions\MissingDependencyException;
@@ -81,6 +82,8 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->singleton(MerakiInstaller::class, function () {
             return new MerakiInstaller();
         });
+
+        $this->app->alias(CoreManager::class, 'meraki');
 
         // Register enabled plugins early so their service bindings are available
         try {
@@ -192,6 +195,7 @@ class CoreServiceProvider extends ServiceProvider
             PluginEnableCommand::class,
             PluginDisableCommand::class,
             PluginInfoCommand::class,
+            InfoCommand::class,
         ]);
     }
 
