@@ -8,6 +8,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Meraki\Core\Contracts\AuthDriver;
 use Meraki\Core\Contracts\PermissionDriver;
 use Meraki\Core\Modules\PackageRegistry;
+use Meraki\Core\Plugins\PluginManager;
 
 class CoreManager
 {
@@ -17,6 +18,7 @@ class CoreManager
     public function __construct(
         protected Application $app,
         protected PackageRegistry $packageRegistry,
+        protected PluginManager $pluginManager,
     ) {}
 
     public function extend(string $capability, string $name, Closure $factory): void
@@ -72,6 +74,11 @@ class CoreManager
     public function packages(): PackageRegistry
     {
         return $this->packageRegistry;
+    }
+
+    public function plugins(): PluginManager
+    {
+        return $this->pluginManager;
     }
 
     protected function defaultDriver(string $capability): string

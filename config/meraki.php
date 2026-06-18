@@ -7,4 +7,8 @@ return [
         'permission' => ['driver' => env('MERAKI_PERMISSION_DRIVER', 'auto')],
     ],
     'state_file' => base_path('.meraki.json'),
+    'plugins' => [
+        'path'     => base_path('plugins/'),
+        'discover' => ['directory', 'composer'],
+    ],
 ];

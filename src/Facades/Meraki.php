@@ -11,6 +11,7 @@ use Meraki\Core\CoreManager;
  * @method static bool can(string $permission, mixed $user = null)
  * @method static void extend(string $capability, string $name, \Closure $factory)
  * @method static \Meraki\Core\Modules\PackageRegistry packages()
+ * @method static \Meraki\Core\Plugins\PluginManager plugins()
  *
  * @see CoreManager
  */
