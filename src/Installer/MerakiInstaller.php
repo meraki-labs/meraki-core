@@ -3,6 +3,7 @@
 namespace Meraki\Core\Installer;
 
 use Meraki\Core\Installer\Steps\DetectLaravelVersionStep;
+use Meraki\Core\Installer\Steps\DiscoverPluginsStep;
 use Meraki\Core\Installer\Steps\PublishConfigStep;
 use Meraki\Core\Installer\Steps\PublishMigrationsStep;
 use Meraki\Core\Installer\Steps\WriteStateStep;
@@ -30,6 +31,7 @@ class MerakiInstaller
             PublishConfigStep::class,
             PublishMigrationsStep::class,
             WriteStateStep::class,
+            DiscoverPluginsStep::class,
             FinishStep::class,
         ];
 
