@@ -8,6 +8,9 @@ use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
 use Meraki\Core\Installer\MerakiInstaller;
+use Meraki\Core\Exceptions\MissingDependencyException;
+use Meraki\Core\Modules\DependencyGraph;
+use Meraki\Core\Modules\DependencyResolver;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Modules\PermissionRegistry;
 use Meraki\Core\Events\PermissionsRegistered;
@@ -49,6 +52,8 @@ class CoreServiceProvider extends ServiceProvider
             __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], ['meraki-migrations']);
 
+        $this->validateDependencies();
+
         $this->app->booted(function () {
             $registry = $this->app->make(PermissionRegistry::class);
             $packages = $this->app->make(PackageRegistry::class);
@@ -75,5 +80,34 @@ class CoreServiceProvider extends ServiceProvider
             UpdateCommand::class,
             DoctorCommand::class,
         ]);
+    }
+
+    protected function validateDependencies(): void
+    {
+        $packages = $this->app->make(PackageRegistry::class);
+        $graph    = $this->buildDependencyGraph($packages);
+        $resolver = new DependencyResolver();
+        $resolver->resolve($graph);
+    }
+
+    protected function buildDependencyGraph(PackageRegistry $packages): DependencyGraph
+    {
+        $graph = new DependencyGraph();
+        $all   = $packages->all();
+
+        foreach ($all as $name => $meta) {
+            $graph->addNode($name);
+        }
+
+        foreach ($all as $name => $meta) {
+            foreach ($meta['requires'] ?? [] as $dep) {
+                if (!array_key_exists($dep, $all)) {
+                    throw new MissingDependencyException($dep, $name);
+                }
+                $graph->addEdge($name, $dep);
+            }
+        }
+
+        return $graph;
     }
 }
