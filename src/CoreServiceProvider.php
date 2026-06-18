@@ -8,9 +8,12 @@ use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
 use Meraki\Core\Console\MerakiInfoCommand;
+use Meraki\Core\Console\MerakiInfoCommand;
+use Meraki\Core\CoreManager;
 use Meraki\Core\Installer\MerakiInstaller;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Modules\PermissionRegistry;
+use Meraki\Core\Modules\PluginRegistry;
 use Meraki\Core\Events\PermissionsRegistered;
 use Illuminate\Support\ServiceProvider;
 
@@ -25,6 +28,7 @@ class CoreServiceProvider extends ServiceProvider
 
         $this->app->singleton(PackageRegistry::class);
         $this->app->singleton(PermissionRegistry::class);
+        $this->app->singleton(PluginRegistry::class);
         $this->app->singleton(LaravelAuthAdapter::class);
         $this->app->singleton(LaravelGateAdapter::class);
 
@@ -60,7 +64,18 @@ class CoreServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             $registry = $this->app->make(PermissionRegistry::class);
             $packages = $this->app->make(PackageRegistry::class);
+            $plugins  = $this->app->make(PluginRegistry::class);
 
+            // --- Typed plugins (PluginRegistry, độc lập) ---
+            foreach ($plugins->all() as $plugin) {
+                $plugin->boot($this->app);
+                $permissions = $plugin->getPermissions();
+                if (!empty($permissions)) {
+                    $registry->register($permissions);
+                }
+            }
+
+            // --- Legacy array packages (PackageRegistry, giữ nguyên) ---
             foreach ($packages->all() as $name => $meta) {
                 $configKey = $meta['config'] ?? null;
                 if ($configKey) {
