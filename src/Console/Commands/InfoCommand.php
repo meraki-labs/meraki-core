@@ -30,10 +30,10 @@ class InfoCommand extends Command
 
         // General section
         $this->line('  <fg=yellow>General</>');
-        $this->twoColumnDetail('  Version', 'dev-main');
-        $this->twoColumnDetail('  Status', $state->installed ? '<fg=green>Installed ✓</>' : '<fg=red>Not Installed</>');
-        $this->twoColumnDetail('  Installed At', $state->installedAt ?: 'N/A');
-        $this->twoColumnDetail('  Laravel Version', $state->laravelVersion ?: 'unknown');
+        $this->components->twoColumnDetail('  Version', 'dev-main');
+        $this->components->twoColumnDetail('  Status', $state->installed ? '<fg=green>Installed ✓</>' : '<fg=red>Not Installed</>');
+        $this->components->twoColumnDetail('  Installed At', $state->installedAt ?: 'N/A');
+        $this->components->twoColumnDetail('  Laravel Version', $state->laravelVersion ?: 'unknown');
         $this->newLine();
 
         // Active Drivers section
@@ -42,8 +42,8 @@ class InfoCommand extends Command
         $permDriver = $this->resolveDriverName('permission');
         $authConfig = config('meraki.capabilities.auth.driver', 'auto');
         $permConfig = config('meraki.capabilities.permission.driver', 'auto');
-        $this->twoColumnDetail('  Auth', "{$authDriver} ({$authConfig})");
-        $this->twoColumnDetail('  Permission', "{$permDriver} ({$permConfig})");
+        $this->components->twoColumnDetail('  Auth', "{$authDriver} ({$authConfig})");
+        $this->components->twoColumnDetail('  Permission', "{$permDriver} ({$permConfig})");
         $this->newLine();
 
         // Registered Packages section
