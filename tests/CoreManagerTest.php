@@ -14,7 +14,6 @@ use Meraki\Core\Testing\MerakiTestCase;
 
 class CoreManagerTest extends MerakiTestCase
 {
-
     // Test 1: fallback to Laravel adapters when no package driver registered
     public function test_auth_capability_returns_laravel_adapter_by_default(): void
     {

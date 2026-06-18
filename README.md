@@ -267,6 +267,77 @@ Typical responsibilities:
 
 ---
 
+## Debugging
+
+Use the `meraki:info` Artisan command to inspect the current state of the Capability Gate — useful when a driver isn't resolving as expected:
+
+```bash
+php artisan meraki:info
+```
+
+Sample output:
+
+```
+  Meraki Core — Driver State
+  ────────────────────────────────────────
+  Capability  Driver              Class
+  auth        auto → laravel      Meraki\Core\Adapters\LaravelAuthAdapter
+  permission  auto → laravel      Meraki\Core\Adapters\LaravelGateAdapter
+
+  Registered Packages (PackageRegistry)
+  ────────────────────────────────────────
+  (none)
+
+  Permission Registry: 0 permissions loaded
+```
+
+When a package like `meraki-auth` is installed, its driver and permissions will appear in the output.
+
+---
+
+## Testing
+
+### `InteractsWithMerakiCore` Trait
+
+Packages that integrate with Meraki Core can use this trait in their test classes to reduce boilerplate:
+
+```php
+use Meraki\Core\Testing\InteractsWithMerakiCore;
+use Orchestra\Testbench\TestCase;
+
+class MyPackageTest extends TestCase
+{
+    use InteractsWithMerakiCore;
+
+    public function test_my_driver_works(): void
+    {
+        $fakeDriver = new class implements \Meraki\Core\Contracts\PermissionDriver {
+            public function can(string $permission, mixed $user = null): bool
+            {
+                return $permission === 'do.something';
+            }
+        };
+
+        $this->registerFakeDriver('permission', 'fake', $fakeDriver);
+
+        $this->assertMerakiCan('do.something');
+        $this->assertMerakiCannot('do.something.else');
+    }
+}
+```
+
+**Available helpers:**
+
+| Method | Description |
+|---|---|
+| `registerFakeDriver(string $capability, string $name, object $driver)` | Register a fake driver and set it as the active driver for the capability |
+| `assertMerakiCan(string $permission, mixed $user = null)` | Assert that `CoreManager::can()` returns `true` |
+| `assertMerakiCannot(string $permission, mixed $user = null)` | Assert that `CoreManager::can()` returns `false` |
+
+> **Note:** The `src/Testing/` directory is intended for use in tests only. It is mapped under `autoload-dev` and should not be relied upon in production code.
+
+---
+
 ## Summary
 
 Meraki Core is the **contract layer** of the Meraki ecosystem.

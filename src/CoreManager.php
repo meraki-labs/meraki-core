@@ -76,6 +76,16 @@ class CoreManager
         return $this->packageRegistry;
     }
 
+    public function resolvedCapabilities(): array
+    {
+        return array_map('get_class', $this->resolved);
+    }
+
+    public function registeredDriverNames(): array
+    {
+        return array_map('array_keys', $this->factories);
+    }
+
     protected function defaultDriver(string $capability): string
     {
         return match ($capability) {
