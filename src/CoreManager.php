@@ -3,10 +3,10 @@
 namespace Meraki\Core;
 
 use Closure;
-use InvalidArgumentException;
 use Illuminate\Contracts\Foundation\Application;
 use Meraki\Core\Contracts\AuthDriver;
 use Meraki\Core\Contracts\PermissionDriver;
+use Meraki\Core\Exceptions\DriverNotFoundException;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Plugins\PluginManager;
 
@@ -37,9 +37,10 @@ class CoreManager
 
         if ($driverName !== 'auto') {
             if (!isset($this->factories[$capability][$driverName])) {
-                $available = implode(', ', array_keys($this->factories[$capability] ?? []));
-                throw new InvalidArgumentException(
-                    "Driver [{$driverName}] for capability [{$capability}] not found. Available: [{$available}]."
+                throw DriverNotFoundException::for(
+                    $capability,
+                    $driverName,
+                    array_keys($this->factories[$capability] ?? [])
                 );
             }
             return $this->resolved[$capability] = ($this->factories[$capability][$driverName])($this->app);
@@ -81,12 +82,22 @@ class CoreManager
         return $this->pluginManager;
     }
 
+    public function resolvedCapabilities(): array
+    {
+        return array_map('get_class', $this->resolved);
+    }
+
+    public function registeredDriverNames(): array
+    {
+        return array_map('array_keys', $this->factories);
+    }
+
     protected function defaultDriver(string $capability): string
     {
         return match ($capability) {
             'auth'       => \Meraki\Core\Adapters\LaravelAuthAdapter::class,
             'permission' => \Meraki\Core\Adapters\LaravelGateAdapter::class,
-            default      => throw new InvalidArgumentException("No default driver for capability [{$capability}]."),
+            default      => throw DriverNotFoundException::for($capability, 'default', []),
         };
     }
 }

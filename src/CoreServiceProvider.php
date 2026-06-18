@@ -4,6 +4,7 @@ namespace Meraki\Core;
 
 use Meraki\Core\Adapters\LaravelAuthAdapter;
 use Meraki\Core\Adapters\LaravelGateAdapter;
+use Meraki\Core\Console\MerakiInfoCommand;
 use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
@@ -126,6 +127,7 @@ class CoreServiceProvider extends ServiceProvider
             InstallCommand::class,
             UpdateCommand::class,
             DoctorCommand::class,
+            MerakiInfoCommand::class,
             PluginListCommand::class,
             PluginEnableCommand::class,
             PluginDisableCommand::class,
