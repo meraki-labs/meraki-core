@@ -3,26 +3,28 @@
 namespace Meraki\Core\Installer;
 
 use Meraki\Core\Hooks\HookRegistry;
+use Meraki\Core\Installer\Steps\BuildManifestStep;
 use Meraki\Core\Installer\Steps\DetectLaravelVersionStep;
 use Meraki\Core\Installer\Steps\DiscoverPluginsStep;
+use Meraki\Core\Installer\Steps\FinishStep;
 use Meraki\Core\Installer\Steps\PublishConfigStep;
 use Meraki\Core\Installer\Steps\PublishMigrationsStep;
+use Meraki\Core\Installer\Steps\UpdateManagedFilesStep;
 use Meraki\Core\Installer\Steps\WriteStateStep;
-use Meraki\Core\Installer\Steps\FinishStep;
 
 class MerakiInstaller
 {
-    public function install(): void
+    public function install(): InstallerContext
     {
-        $this->run('install');
+        return $this->run('install');
     }
 
-    public function update(): void
+    public function update(): InstallerContext
     {
-        $this->run('update');
+        return $this->run('update');
     }
 
-    protected function run(string $mode): void
+    protected function run(string $mode): InstallerContext
     {
         $context = new InstallerContext();
         $context->mode = $mode;
@@ -39,19 +41,43 @@ class MerakiInstaller
 
         $hooks->fire($beforeHook, $context);
 
-        $steps = [
-            DetectLaravelVersionStep::class,
-            PublishConfigStep::class,
-            PublishMigrationsStep::class,
-            WriteStateStep::class,
-            DiscoverPluginsStep::class,
-            FinishStep::class,
-        ];
+        $steps = $mode === 'update'
+            ? $this->updateSteps()
+            : $this->installSteps();
 
         foreach ($steps as $stepClass) {
             app($stepClass)->run($context);
         }
 
         $hooks->fire($afterHook, $context);
+
+        return $context;
+    }
+
+    private function installSteps(): array
+    {
+        return [
+            DetectLaravelVersionStep::class,
+            PublishConfigStep::class,
+            PublishMigrationsStep::class,
+            WriteStateStep::class,
+            DiscoverPluginsStep::class,
+            BuildManifestStep::class,
+            FinishStep::class,
+        ];
+    }
+
+    private function updateSteps(): array
+    {
+        return [
+            DetectLaravelVersionStep::class,
+            UpdateManagedFilesStep::class,
+            PublishConfigStep::class,
+            PublishMigrationsStep::class,
+            WriteStateStep::class,
+            DiscoverPluginsStep::class,
+            BuildManifestStep::class,
+            FinishStep::class,
+        ];
     }
 }

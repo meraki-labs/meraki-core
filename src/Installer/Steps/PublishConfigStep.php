@@ -11,7 +11,7 @@ class PublishConfigStep implements Step
     {
         Artisan::call('vendor:publish', [
             '--tag' => 'meraki-config',
-            '--force' => false,
+            '--force' => $context->mode === 'update',
         ]);
     }
 }
