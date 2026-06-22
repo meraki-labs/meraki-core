@@ -18,4 +18,12 @@ interface PluginInterface
     public function boot(Application $app): void;
 
     public function getPermissions(): array;
+
+    public function install(Application $app): void;
+
+    public function uninstall(Application $app): void;
+
+    public function onEnable(Application $app): void;
+
+    public function onDisable(Application $app): void;
 }

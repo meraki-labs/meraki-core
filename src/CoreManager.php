@@ -10,7 +10,7 @@ use Meraki\Core\Exceptions\CapabilityDriverNotFoundException;
 use Meraki\Core\Exceptions\CapabilityNotSupportedException;
 use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Modules\PackageRegistry;
-use Meraki\Core\Plugins\PluginManager;
+use Meraki\Core\Plugin\PluginLoader;
 
 class CoreManager
 {
@@ -20,7 +20,7 @@ class CoreManager
     public function __construct(
         protected Application $app,
         protected PackageRegistry $packageRegistry,
-        protected PluginManager $pluginManager,
+        protected PluginLoader $pluginLoader,
         protected HookRegistry $hookRegistry,
     ) {}
 
@@ -80,9 +80,9 @@ class CoreManager
         return $this->packageRegistry;
     }
 
-    public function plugins(): PluginManager
+    public function plugins(): PluginLoader
     {
-        return $this->pluginManager;
+        return $this->pluginLoader;
     }
 
     public function hooks(): HookRegistry
