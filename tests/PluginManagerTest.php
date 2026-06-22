@@ -218,10 +218,10 @@ class PluginManagerTest extends TestCase
         $this->assertFalse($this->app->make(PluginRepository::class)->isInstalled('my-plugin'));
     }
 
-    public function test_plugins_method_on_core_manager_returns_plugin_manager(): void
+    public function test_plugins_method_on_core_manager_returns_plugin_loader(): void
     {
         $coreManager = $this->app->make(\Meraki\Core\CoreManager::class);
 
-        $this->assertInstanceOf(PluginManager::class, $coreManager->plugins());
+        $this->assertInstanceOf(\Meraki\Core\Plugin\PluginLoader::class, $coreManager->plugins());
     }
 }
