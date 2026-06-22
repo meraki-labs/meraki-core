@@ -18,6 +18,7 @@ use Meraki\Core\Console\Commands\PluginInfoCommand;
 use Meraki\Core\Events\PluginsBooted;
 use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Installer\MerakiInstaller;
+use Meraki\Core\Installer\PluginInstaller;
 use Meraki\Core\Modules\DependencyGraph;
 use Meraki\Core\Modules\DependencyResolver;
 use Meraki\Core\Modules\PackageRegistry;
@@ -81,6 +82,14 @@ class CoreServiceProvider extends ServiceProvider
             return new MerakiInstaller();
         });
 
+        $this->app->singleton(PluginInstaller::class, function ($app) {
+            return new PluginInstaller(
+                pluginsBasePath: base_path('plugins'),
+                tempPath: sys_get_temp_dir(),
+                pluginDiscovery: $app->make(PluginDiscovery::class),
+            );
+        });
+
         $this->app->alias(CoreManager::class, 'meraki');
 
         // Register enabled plugins early so their service bindings are available
@@ -136,6 +145,23 @@ class CoreServiceProvider extends ServiceProvider
                         'provider' => $manifest->provider,
                         'config'   => $manifest->config,
                     ]);
+                }
+
+                // Register PSR-4 autoloader for directory-based plugins that ship their own classes.
+                // Must run after Core boots so plugin providers are resolved correctly.
+                if ($manifest->source === 'plugins' && !empty($manifest->autoload['psr4'])) {
+                    foreach ($manifest->autoload['psr4'] as $namespace => $relativePath) {
+                        $fullPath = $manifest->basePath . '/' . ltrim($relativePath, '/');
+                        spl_autoload_register(function (string $class) use ($namespace, $fullPath) {
+                            if (!str_starts_with($class, $namespace)) {
+                                return;
+                            }
+                            $file = $fullPath . str_replace('\\', '/', substr($class, strlen($namespace))) . '.php';
+                            if (file_exists($file)) {
+                                require_once $file;
+                            }
+                        });
+                    }
                 }
             }
 
