@@ -10,11 +10,11 @@ use Meraki\Core\Console\Commands\DoctorCommand;
 use Meraki\Core\Console\Commands\InfoCommand;
 use Meraki\Core\Console\Commands\InstallCommand;
 use Meraki\Core\Console\Commands\UpdateCommand;
-use Meraki\Core\Exceptions\MissingDependencyException;
-use Meraki\Core\Console\Commands\PluginListCommand;
-use Meraki\Core\Console\Commands\PluginEnableCommand;
-use Meraki\Core\Console\Commands\PluginDisableCommand;
-use Meraki\Core\Console\Commands\PluginInfoCommand;
+use Meraki\Core\Console\Commands\Plugin\ListPluginsCommand;
+use Meraki\Core\Console\Commands\Plugin\EnablePluginCommand;
+use Meraki\Core\Console\Commands\Plugin\DisablePluginCommand;
+use Meraki\Core\Console\Commands\Plugin\InstallPluginCommand;
+use Meraki\Core\Console\Commands\Plugin\UninstallPluginCommand;
 use Meraki\Core\Events\PluginsBooted;
 use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Installer\MerakiInstaller;
@@ -23,8 +23,13 @@ use Meraki\Core\Modules\DependencyResolver;
 use Meraki\Core\Modules\PackageRegistry;
 use Meraki\Core\Modules\PermissionRegistry;
 use Meraki\Core\Modules\PluginRegistry;
-use Meraki\Core\Modules\PluginDiscovery;
+use Meraki\Core\Modules\PluginDiscovery as ManifestPluginDiscovery;
+use Meraki\Core\Plugin\DatabaseStateStore;
+use Meraki\Core\Plugin\PluginDiscovery;
+use Meraki\Core\Plugin\PluginLoader;
+use Meraki\Core\Plugin\PluginStateStore;
 use Meraki\Core\Events\PermissionsRegistered;
+use Meraki\Core\Exceptions\MissingDependencyException;
 use Meraki\Core\Plugins\PluginManager;
 use Meraki\Core\Plugins\PluginRepository;
 use Meraki\Core\Plugins\Discovery\DirectoryDiscoverer;
@@ -68,11 +73,30 @@ class CoreServiceProvider extends ServiceProvider
             return new PluginManager($discoverers, $app->make(PluginRepository::class));
         });
 
+        // PluginLoader (1.6) — orchestrator for PluginInterface-based plugins
+        $this->app->singleton(PluginDiscovery::class);
+        $this->app->singleton(PluginStateStore::class, DatabaseStateStore::class);
+        $this->app->singleton(PluginLoader::class, function ($app) {
+            return new PluginLoader(
+                $app,
+                $app->make(PluginDiscovery::class),
+                $app->make(PluginRegistry::class),
+                $app->make(PluginStateStore::class),
+            );
+        });
+
+        // Discovery runs early (only reads files, no instantiation)
+        try {
+            $this->app->make(PluginLoader::class)->discover();
+        } catch (\Throwable) {
+            // silently skip if discovery fails (e.g. composer files not present)
+        }
+
         $this->app->singleton(CoreManager::class, function ($app) {
             return new CoreManager(
                 $app,
                 $app->make(PackageRegistry::class),
-                $app->make(PluginManager::class),
+                $app->make(PluginLoader::class),
                 $app->make(HookRegistry::class),
             );
         });
@@ -83,7 +107,7 @@ class CoreServiceProvider extends ServiceProvider
 
         $this->app->alias(CoreManager::class, 'meraki');
 
-        // Register enabled plugins early so their service bindings are available
+        // Register enabled Plugin-interface plugins early so their bindings are available
         try {
             $pluginManager = $this->app->make(PluginManager::class);
             foreach ($pluginManager->active() as $plugin) {
@@ -93,8 +117,8 @@ class CoreServiceProvider extends ServiceProvider
             // DB not ready — plugins default to disabled
         }
 
-        $this->app->singleton(PluginDiscovery::class, function ($app) {
-            return new PluginDiscovery(
+        $this->app->singleton(ManifestPluginDiscovery::class, function ($app) {
+            return new ManifestPluginDiscovery(
                 basePath: $app->basePath(),
                 cachePath: $app->bootstrapPath('cache/meraki-plugins.php'),
             );
@@ -121,11 +145,13 @@ class CoreServiceProvider extends ServiceProvider
         $this->validateDependencies();
 
         $this->app->booted(function () {
-            $discovery = $this->app->make(PluginDiscovery::class);
-            $packages  = $this->app->make(PackageRegistry::class);
-            $plugins  = $this->app->make(PluginRegistry::class);
+            $manifestDiscovery = $this->app->make(ManifestPluginDiscovery::class);
+            $packages          = $this->app->make(PackageRegistry::class);
+            $plugins           = $this->app->make(PluginRegistry::class);
+            $loader            = $this->app->make(PluginLoader::class);
+            $registry          = $this->app->make(PermissionRegistry::class);
 
-            foreach ($discovery->discover() as $manifest) {
+            foreach ($manifestDiscovery->discover() as $manifest) {
                 $configPath = $manifest->basePath . '/config/' . $manifest->config . '.php';
                 if (file_exists($configPath)) {
                     $this->mergeConfigFrom($configPath, $manifest->config);
@@ -139,9 +165,14 @@ class CoreServiceProvider extends ServiceProvider
                 }
             }
 
-            $registry = $this->app->make(PermissionRegistry::class);
+            // Load all enabled PluginInterface plugins into registry
+            try {
+                $loader->loadAllEnabled();
+            } catch (\Throwable) {
+                // DB not ready — skip auto-load
+            }
 
-            // --- Typed plugins (PluginRegistry, độc lập) ---
+            // Boot all plugins in registry (manually registered + loader-discovered)
             foreach ($plugins->all() as $plugin) {
                 $plugin->boot($this->app);
                 $permissions = $plugin->getPermissions();
@@ -150,7 +181,7 @@ class CoreServiceProvider extends ServiceProvider
                 }
             }
 
-            // --- Legacy array packages (PackageRegistry, giữ nguyên) ---
+            // Legacy array packages
             foreach ($packages->all() as $name => $meta) {
                 $configKey = $meta['config'] ?? null;
                 if ($configKey) {
@@ -163,7 +194,7 @@ class CoreServiceProvider extends ServiceProvider
 
             event(new PermissionsRegistered($registry));
 
-            // Boot enabled plugins
+            // Boot Plugin-interface plugins (PluginManager system)
             try {
                 $pluginManager = $this->app->make(PluginManager::class);
                 foreach ($pluginManager->active() as $plugin) {
@@ -184,10 +215,11 @@ class CoreServiceProvider extends ServiceProvider
             UpdateCommand::class,
             DoctorCommand::class,
             DiscoverCommand::class,
-            PluginListCommand::class,
-            PluginEnableCommand::class,
-            PluginDisableCommand::class,
-            PluginInfoCommand::class,
+            ListPluginsCommand::class,
+            EnablePluginCommand::class,
+            DisablePluginCommand::class,
+            InstallPluginCommand::class,
+            UninstallPluginCommand::class,
             InfoCommand::class,
         ]);
     }

@@ -24,4 +24,12 @@ abstract class AbstractPlugin implements PluginInterface
         }
         return config("{$config}.permissions", []);
     }
+
+    public function install(Application $app): void {}
+
+    public function uninstall(Application $app): void {}
+
+    public function onEnable(Application $app): void {}
+
+    public function onDisable(Application $app): void {}
 }
