@@ -12,6 +12,7 @@ class PluginManifest
         public readonly string $basePath,
         public readonly string $source,
         public readonly ?string $version = null,
+        public readonly array $autoload = [],
     ) {}
 
     public static function fromArray(array $data, string $basePath, string $source): self
@@ -30,6 +31,7 @@ class PluginManifest
             basePath: $basePath,
             source: $source,
             version: $data['version'] ?? null,
+            autoload: $data['autoload'] ?? [],
         );
     }
 
@@ -43,6 +45,7 @@ class PluginManifest
             'basePath' => $this->basePath,
             'source'   => $this->source,
             'version'  => $this->version,
+            'autoload' => $this->autoload,
         ];
     }
 }
