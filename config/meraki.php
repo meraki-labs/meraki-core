@@ -11,4 +11,9 @@ return [
         'path'     => base_path('plugins/'),
         'discover' => ['directory', 'composer'],
     ],
+    'hub' => [
+        'url'     => env('MERAKI_HUB_URL', 'https://hub.merakilabs.tech'),
+        'token'   => env('MERAKI_HUB_TOKEN'),
+        'timeout' => (int) env('MERAKI_HUB_TIMEOUT', 10),
+    ],
 ];
