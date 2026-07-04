@@ -35,7 +35,10 @@ use Meraki\Core\Plugins\PluginManager;
 use Meraki\Core\Plugins\PluginRepository;
 use Meraki\Core\Plugins\Discovery\DirectoryDiscoverer;
 use Meraki\Core\Plugins\Discovery\ComposerDiscoverer;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\ServiceProvider;
+use Meraki\Core\Contracts\HubClientInterface;
+use Meraki\Core\Hub\HubClient;
 
 class CoreServiceProvider extends ServiceProvider
 {
@@ -115,6 +118,15 @@ class CoreServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(CoreManager::class, 'meraki');
+
+        $this->app->singleton(HubClientInterface::class, function ($app) {
+            return new HubClient(
+                http:    $app->make(HttpFactory::class),
+                baseUrl: config('meraki.hub.url', 'https://hub.merakilabs.tech'),
+                token:   config('meraki.hub.token'),
+                timeout: (int) config('meraki.hub.timeout', 10),
+            );
+        });
 
         // Register enabled Plugin-interface plugins early so their bindings are available
         try {
