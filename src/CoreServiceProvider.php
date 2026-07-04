@@ -17,7 +17,10 @@ use Meraki\Core\Console\Commands\PluginDisableCommand;
 use Meraki\Core\Console\Commands\PluginInfoCommand;
 use Meraki\Core\Events\PluginsBooted;
 use Meraki\Core\Hooks\HookRegistry;
+use Meraki\Core\Http\Middleware\RedirectIfInstalled;
+use Meraki\Core\Installer\EnvironmentChecker;
 use Meraki\Core\Installer\MerakiInstaller;
+use Meraki\Core\Installer\WizardSession;
 use Meraki\Core\Modules\DependencyGraph;
 use Meraki\Core\Modules\DependencyResolver;
 use Meraki\Core\Modules\PackageRegistry;
@@ -81,6 +84,9 @@ class CoreServiceProvider extends ServiceProvider
             return new MerakiInstaller();
         });
 
+        $this->app->singleton(WizardSession::class);
+        $this->app->singleton(EnvironmentChecker::class);
+
         $this->app->alias(CoreManager::class, 'meraki');
 
         // Register enabled plugins early so their service bindings are available
@@ -117,6 +123,17 @@ class CoreServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], ['meraki-migrations']);
+
+        $this->publishes([
+            __DIR__ . '/../resources/views/installer' => resource_path('views/vendor/meraki/installer'),
+        ], ['meraki-installer-views']);
+
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'meraki');
+
+        $this->loadRoutesFrom(__DIR__ . '/../routes/installer.php');
+
+        $router = $this->app->make(\Illuminate\Routing\Router::class);
+        $router->aliasMiddleware('meraki.installed', RedirectIfInstalled::class);
 
         $this->validateDependencies();
 

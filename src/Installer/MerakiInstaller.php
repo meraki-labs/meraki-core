@@ -4,9 +4,11 @@ namespace Meraki\Core\Installer;
 
 use Meraki\Core\Hooks\HookRegistry;
 use Meraki\Core\Installer\Steps\BuildManifestStep;
+use Meraki\Core\Installer\Steps\CreateAdminStep;
 use Meraki\Core\Installer\Steps\DetectLaravelVersionStep;
 use Meraki\Core\Installer\Steps\DiscoverPluginsStep;
 use Meraki\Core\Installer\Steps\FinishStep;
+use Meraki\Core\Installer\Steps\MigrateStep;
 use Meraki\Core\Installer\Steps\PublishConfigStep;
 use Meraki\Core\Installer\Steps\PublishMigrationsStep;
 use Meraki\Core\Installer\Steps\UpdateManagedFilesStep;
@@ -60,9 +62,11 @@ class MerakiInstaller
             DetectLaravelVersionStep::class,
             PublishConfigStep::class,
             PublishMigrationsStep::class,
+            MigrateStep::class,
             WriteStateStep::class,
             DiscoverPluginsStep::class,
             BuildManifestStep::class,
+            CreateAdminStep::class,
             FinishStep::class,
         ];
     }

@@ -11,4 +11,8 @@ return [
         'path'     => base_path('plugins/'),
         'discover' => ['directory', 'composer'],
     ],
+    'installer' => [
+        'redirect'   => env('MERAKI_INSTALL_REDIRECT', '/'),
+        'middleware' => ['web'],
+    ],
 ];
